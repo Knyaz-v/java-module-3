@@ -22,6 +22,15 @@ public class ExplorerServlet extends HttpServlet {
     public void init() throws ServletException {
         ServletContext context = getServletContext();
         rootPath = context.getInitParameter("explorerRootPath");
+
+        if (rootPath == null || rootPath.equals("C:/")) {
+            String os = System.getProperty("os.name").toLowerCase();
+            if (os.contains("nix") || os.contains("nux")) {
+                rootPath = System.getProperty("user.home") + "/"; // /home/username
+            } else {
+                rootPath = "C:/";
+            }
+        }
     }
 
     @Override
@@ -86,7 +95,7 @@ public class ExplorerServlet extends HttpServlet {
                 req.setAttribute("currentPath", requestedPath);
                 req.setAttribute("parentPath", parentPath);
                 req.setAttribute("items", fileList);
-                req.setAttribute("rootPath", realRoot);
+                req.setAttribute("rootPath",rootPath);
 
                 req.getRequestDispatcher("/WEB-INF/explorer.jsp").forward(req, resp);
                 return;

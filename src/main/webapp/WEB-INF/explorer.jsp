@@ -16,7 +16,7 @@
 
 <fmt:formatDate value="${generationTime}" pattern="dd.MM.yyyy HH:mm:ss"/>
 
-<h1>C:/${not empty currentPath ? currentPath.concat('/') : ''}</h1>
+<h1>${rootPath}${not empty currentPath ? currentPath.concat('/') : ''}</h1>
 
 <hr>
 
