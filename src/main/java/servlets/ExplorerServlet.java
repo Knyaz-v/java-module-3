@@ -1,6 +1,8 @@
-import javax.servlet.ServletContext;
+package servlets;
+
+import accounts.UserProfile;
+
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -15,29 +17,28 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class ExplorerServlet extends HttpServlet {
-    private String rootPath;
+public class ExplorerServlet extends BaseServlet {
 
     @Override
-    public void init() throws ServletException {
-        ServletContext context = getServletContext();
-        rootPath = context.getInitParameter("explorerRootPath");
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
 
-        if (rootPath == null || rootPath.equals("C:/")) {
-            String os = System.getProperty("os.name").toLowerCase();
-            if (os.contains("nix") || os.contains("nux")) {
-                rootPath = System.getProperty("user.home") + "/"; // /home/username
-            } else {
-                rootPath = "C:/";
-            }
+        UserProfile user = getCurrentUser(req, resp);
+        if (user == null) {
+            resp.sendRedirect(req.getContextPath() + "/login");
+            return;
         }
-    }
 
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        Path root = Paths.get(rootPath);
+        String userRoot = getBasePath() + user.getLogin() + "/";
+        Path rootPath = Paths.get(userRoot);
+
+        if (!Files.exists(rootPath)) {
+            resp.sendError(HttpServletResponse.SC_NOT_FOUND,
+                    "User folder not found: " + userRoot);
+            return;
+        }
+
         String requestedPath = req.getPathInfo();
-
         if (requestedPath == null || requestedPath.equals("/")) {
             requestedPath = "";
         } else {
@@ -45,19 +46,23 @@ public class ExplorerServlet extends HttpServlet {
         }
         requestedPath = URLDecoder.decode(requestedPath, "UTF-8");
 
-        Path fullPath = root.resolve(requestedPath);
+        Path fullPath = rootPath.resolve(requestedPath);
+
         if (!Files.exists(fullPath)) {
-            resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Path not found: " + fullPath);
+            resp.sendError(HttpServletResponse.SC_NOT_FOUND,
+                    "Path not found: " + fullPath);
             return;
         }
 
         Path realFullPath = fullPath.toRealPath();
-        Path realRoot = root.toRealPath();
+        rootPath = rootPath.toRealPath();
 
-        if (!realFullPath.startsWith(realRoot)) {
+        if (!realFullPath.startsWith(rootPath)) {
             resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied");
             return;
         }
+
+        String userHome = "/explorer/" + user.getLogin() + "/";
 
         if (Files.isRegularFile(realFullPath)) {
             sendFile(realFullPath, resp);
@@ -85,7 +90,8 @@ public class ExplorerServlet extends HttpServlet {
                         fileInfo.put("size", 0L);
                     }
 
-                    fileInfo.put("lastModified", new Date(Files.getLastModifiedTime(item).toMillis()));
+                    fileInfo.put("lastModified", new Date(
+                            Files.getLastModifiedTime(item).toMillis()));
                     fileList.add(fileInfo);
                 }
 
@@ -95,13 +101,14 @@ public class ExplorerServlet extends HttpServlet {
                 req.setAttribute("currentPath", requestedPath);
                 req.setAttribute("parentPath", parentPath);
                 req.setAttribute("items", fileList);
-                req.setAttribute("rootPath",rootPath);
+                req.setAttribute("userHome",userHome);
 
                 req.getRequestDispatcher("/WEB-INF/explorer.jsp").forward(req, resp);
                 return;
 
             } catch (IOException e) {
-                resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Cannot read directory");
+                resp.sendError(HttpServletResponse.SC_FORBIDDEN,
+                        "Cannot read directory");
                 return;
             }
         }
@@ -113,7 +120,8 @@ public class ExplorerServlet extends HttpServlet {
         long fileSize = Files.size(filePath);
 
         resp.setContentType("application/octet-stream");
-        resp.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+        resp.setHeader("Content-Disposition",
+                "attachment; filename=\"" + fileName + "\"");
         resp.setContentLengthLong(fileSize);
 
         try (InputStream in = Files.newInputStream(filePath);
@@ -149,8 +157,10 @@ public class ExplorerServlet extends HttpServlet {
             if (!aIsDir && bIsDir) return 1;
             return 0;
         };
+
         Comparator<Path> byName = (a, b) ->
-                a.getFileName().toString().compareToIgnoreCase(b.getFileName().toString());
+                a.getFileName().toString().
+                        compareToIgnoreCase(b.getFileName().toString());
         return byType.thenComparing(byName);
     }
 }

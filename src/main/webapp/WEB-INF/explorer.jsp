@@ -12,12 +12,16 @@
         a:hover {color: #FF0000;}
     </style>
 </head>
-<body>
 
+<body>
 <fmt:formatDate value="${generationTime}" pattern="dd.MM.yyyy HH:mm:ss"/>
 
-<h1>${rootPath}${not empty currentPath ? currentPath.concat('/') : ''}</h1>
+<div style="text-align: right;">
+    <a href="${pageContext.request.contextPath}/logout">Выйти</a>
+</div>
+<hr>
 
+<h1>${userHome}</h1>
 <hr>
 
 <c:if test="${parentPath != null}">
