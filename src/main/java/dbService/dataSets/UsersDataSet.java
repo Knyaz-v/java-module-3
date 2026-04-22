@@ -1,18 +1,20 @@
-package accounts;
+package dbService.dataSets;
 
-import java.io.Serializable;
-
-public class UserProfile implements Serializable {
-    private static final long serialVersionUID = 1L;
-
+public class UsersDataSet {
+    private final long id;
     private final String login;
     private final String password;
     private final String email;
 
-    public UserProfile(String login, String password, String email) {
+    public UsersDataSet(long id, String login, String password, String email) {
+        this.id = id;
         this.login = login;
         this.password = password;
         this.email = email;
+    }
+
+    public long getId() {
+        return id;
     }
 
     public String getLogin() {
