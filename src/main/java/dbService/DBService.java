@@ -26,7 +26,7 @@ public class DBService {
         Configuration configuration = new Configuration();
         configuration.addAnnotatedClass(UsersDataSet.class);
 
-        configuration.setProperty("hibernate.dialect", "org.hibernate.dialect.MySQLDialect");
+        configuration.setProperty("hibernate.dialect", "org.hibernate.dialect.MySQL8Dialect");
         configuration.setProperty("hibernate.connection.driver_class", "com.mysql.cj.jdbc.Driver");
         configuration.setProperty("hibernate.connection.url", "jdbc:mysql://localhost:3306/db_example?useSSL=false&serverTimezone=UTC");
         configuration.setProperty("hibernate.connection.username", "tully");
